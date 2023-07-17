@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tennis/Homepage.dart';
+import 'package:tennis/Myhome_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,11 +12,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
+      title: 'SoftTenis App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(),
+      home: const MyHomePage(title: 'SoftTenis App'),
     );
   }
 }
