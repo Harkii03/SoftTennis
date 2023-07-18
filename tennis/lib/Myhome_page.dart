@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:tennis/Record_page.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'Video_page.dart';
 
+// 会津若松体育施設予約のURL
 final Uri _url = Uri.parse('https://reserve.city.aizuwakamatsu.fukushima.jp/');
 
 // 予約ページに遷移する処理
@@ -175,7 +177,13 @@ class _MyHomePage extends State<MyHomePage> {
                         style: OutlinedButton.styleFrom(
                           primary: Colors.black,
                         ),
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                                builder: (BuildContext context) => VideoPage()),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -196,23 +204,9 @@ class _MyHomePage extends State<MyHomePage> {
               ],
             ),
           ),
-          // Container(
-          //   decoration: BoxDecoration(
-          //     color: Color.fromARGB(252, 251, 150, 79),
-          //     borderRadius: BorderRadius.circular(10),
-          //   ),
-          //   padding: const EdgeInsets.all(3.0),
-          //   child: Text(
-          //     'My Calendar',
-          //     style: TextStyle(
-          //       color: Colors.black,
-          //       fontSize: 24.0,
-          //       fontWeight: FontWeight.bold,
-          //     ),
-          //   ),
-          // ),
         ],
       ),
+      backgroundColor: Color.fromARGB(238, 239, 232, 201),
     );
   }
 }
