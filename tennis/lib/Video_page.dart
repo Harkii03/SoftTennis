@@ -23,7 +23,7 @@ class VideoPage extends StatefulWidget {
 class _VideoPageState extends State<VideoPage> {
   var _user = FirebaseAuth.instance.currentUser;
   // YoutubeAPIのキー
-  static String key = "AIzaSyCLXOe1XbexwWjiF_tpy1H_HnkyejeKVPM";
+  static String key = "";
 
   YoutubeAPI youtube = YoutubeAPI(key);
   List<YouTubeVideo> videoResult = [];
