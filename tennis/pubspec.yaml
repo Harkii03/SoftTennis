@@ -38,6 +38,11 @@ dependencies:
   table_calendar: ^3.0.8
   url_launcher: ^6.1.11
   youtube_api: ^1.0.4
+  firebase_core: ^2.15.0
+  firebase_auth: ^4.7.0
+  cloud_firestore: ^4.8.3
+  intl: ^0.18.1
+  syncfusion_flutter_calendar: ^19.1.63
 
 dev_dependencies:
   flutter_test:
