@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tennis/Practice_Record_page.dart';
-import 'package:tennis/Tournament_Record_page.dart';
+import 'package:tennis/tournament_Record_page.dart';
 
 class RecordPage extends StatefulWidget {
   @override
