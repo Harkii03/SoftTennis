@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:tennis/Myhome_page.dart';
+import 'package:tennis/Record_page.dart';
+import 'package:tennis/Myself_Video_page.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:youtube_api/youtube_api.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -16,7 +21,9 @@ class VideoPage extends StatefulWidget {
 }
 
 class _VideoPageState extends State<VideoPage> {
-  static String key = "";
+  var _user = FirebaseAuth.instance.currentUser;
+  // YoutubeAPIのキー
+  static String key = "AIzaSyCLXOe1XbexwWjiF_tpy1H_HnkyejeKVPM";
 
   YoutubeAPI youtube = YoutubeAPI(key);
   List<YouTubeVideo> videoResult = [];
@@ -52,57 +59,9 @@ class _VideoPageState extends State<VideoPage> {
         ),
         body: Column(children: [
           Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Color.fromARGB(246, 241, 205, 172),
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            width: 200,
-            height: 70,
-            child: OutlinedButton(
-              child: const Text('自分の動画'),
-              style: OutlinedButton.styleFrom(
-                primary: Colors.black,
-              ),
-              onPressed: () {
-                // 自分の動画を表示する処理を実装する
-              },
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Color.fromARGB(246, 241, 205, 172),
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            width: 200,
-            height: 70,
-            child: OutlinedButton(
-              child: const Text('YouTube'),
-              style: OutlinedButton.styleFrom(
-                primary: Colors.black,
-              ),
-              onPressed: () {
-                // YouTubeの動画一覧を表示する処理を実装する
-                // 以下の行のコメントアウトを解除してください
-                // Navigator.push(
-                //   context,
-                //   MaterialPageRoute(
-                //     builder: (BuildContext context) => YouTubeVideoListPage(),
-                //   ),
-                // );
-              },
-            ),
-          ),
-
-          Container(
             child: Text(
               "おすすめの動画",
-              style: TextStyle(color: Color.fromARGB(132, 253, 224, 137)),
+              style: TextStyle(color: Color.fromARGB(132, 0, 0, 0)),
             ),
           ),
 
@@ -112,7 +71,48 @@ class _VideoPageState extends State<VideoPage> {
               children: videoResult.map<Widget>(listItem).toList(),
             ),
           ),
-        ]));
+        ]),
+        bottomNavigationBar: BottomNavigationBar(
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'ホーム',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.menu_book),
+              label: '記録',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.video_call),
+              label: '動画',
+            ),
+          ],
+          onTap: (index) {
+            switch (index) {
+              case 0:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                      builder: (BuildContext context) => MyHomePage()),
+                );
+                break;
+              case 1:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                      builder: (BuildContext context) => RecordPage()),
+                );
+                break;
+              case 2:
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                      builder: (BuildContext context) => VideoPage()),
+                );
+                break;
+            }
+          },
+        ));
   }
 
   Widget listItem(YouTubeVideo video) {
@@ -151,11 +151,6 @@ class _VideoPageState extends State<VideoPage> {
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
-                      Text(
-                        video.url,
-                        softWrap: true,
-                        style: TextStyle(fontSize: 10.0),
-                      ),
                     ],
                   ),
                 )
@@ -163,6 +158,7 @@ class _VideoPageState extends State<VideoPage> {
             ),
           )),
     );
+
     ;
   }
 }
