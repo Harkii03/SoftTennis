@@ -12,7 +12,6 @@ class AppPage extends StatefulWidget {
 
 class _AppPage extends State<AppPage> {
   static const _screens = [HomePage(), RecordPage(), VideoPage()];
-
   int _selectedIndex = 0;
 
   void _onItemTapped(int index) {
