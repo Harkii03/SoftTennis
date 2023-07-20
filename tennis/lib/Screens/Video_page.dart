@@ -20,7 +20,7 @@ class VideoPage extends StatefulWidget {
 
 class _VideoPageState extends State<VideoPage> {
   // YoutubeAPIのキー
-  static String key = "AIzaSyCLXOe1XbexwWjiF_tpy1H_HnkyejeKVPM";
+  static String key = "";
 
   YoutubeAPI youtube = YoutubeAPI(key);
   List<YouTubeVideo> videoResult = [];
