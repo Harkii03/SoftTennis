@@ -13,6 +13,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final FocusNode _emailFocus = FocusNode();
+  final FocusNode _passwordFocus = FocusNode();
   // メッセージ表示用
   String infoText = '';
   // 入力したメールアドレス・パスワード
@@ -34,23 +36,40 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               // メールアドレス入力
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'メールアドレス'),
-                onChanged: (String value) {
-                  setState(() {
-                    email = value;
-                  });
-                },
+              Focus(
+                focusNode: _emailFocus,
+                child: TextFormField(
+                  decoration: const InputDecoration(labelText: 'Mail address'),
+                  onChanged: (String value) {
+                    setState(() {
+                      email = value;
+                    });
+                  },
+                  onFieldSubmitted: (_) {
+                    // フォーカスを外してキーボードを隠す
+                    _emailFocus.unfocus();
+                    // 次のフィールドにフォーカスを移す
+                    FocusScope.of(context).requestFocus(_passwordFocus);
+                  },
+                ),
               ),
               // パスワード入力
-              TextFormField(
-                decoration: const InputDecoration(labelText: 'パスワード(最低6文字)'),
-                obscureText: true,
-                onChanged: (String value) {
-                  setState(() {
-                    password = value;
-                  });
-                },
+              Focus(
+                focusNode: _passwordFocus,
+                child: TextFormField(
+                  decoration: const InputDecoration(
+                      labelText: 'Password (at least 6 characters)'),
+                  obscureText: true,
+                  onChanged: (String value) {
+                    setState(() {
+                      password = value;
+                    });
+                  },
+                  onFieldSubmitted: (_) {
+                    // フォーカスを外してキーボードを隠す
+                    _passwordFocus.unfocus();
+                  },
+                ),
               ),
               Container(
                 padding: EdgeInsets.all(8),
@@ -64,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(173, 49, 44, 44),
                   ),
-                  child: const Text('ユーザー登録',
+                  child: const Text('Sign Up',
                       style:
                           TextStyle(color: Color.fromARGB(246, 241, 205, 172))),
                   onPressed: () async {
@@ -85,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
                     } catch (e) {
                       // ユーザー登録に失敗した場合
                       setState(() {
-                        infoText = "登録に失敗しました：${e.toString()}";
+                        infoText = "Registration failed:${e.toString()}";
                       });
                     }
                   },
@@ -99,7 +118,7 @@ class _LoginPageState extends State<LoginPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color.fromARGB(173, 49, 44, 44),
                   ),
-                  child: const Text('ログイン',
+                  child: const Text('Sign in',
                       style:
                           TextStyle(color: Color.fromARGB(246, 241, 205, 172))),
                   onPressed: () async {
