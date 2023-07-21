@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:tennis/Login/Login_page.dart';
 import 'package:tennis/Screens/Event/Event_page.dart';
 
-import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:intl/date_symbol_data_local.dart';
 
 // 会津若松体育施設予約のURL
 final Uri _url = Uri.parse('https://reserve.city.aizuwakamatsu.fukushima.jp/');
+
+DateTime _focused = DateTime.now();
+DateTime? _selected;
 
 // 予約ページに遷移する処理
 Future<void> _launchUrl() async {
@@ -19,44 +21,6 @@ Future<void> _launchUrl() async {
   }
 }
 
-// カレンダーに表示するデータを格納するMapを作成
-Map<DateTime, List<String>> eventsMap = {};
-
-// イベントのデータをFirestoreから取得
-Future<Map<DateTime, List<String>>> getEventsFromFirestore() async {
-  try {
-    CollectionReference eventsCollection =
-        FirebaseFirestore.instance.collection('events');
-
-    // Firestoreからイベントのデータを取得
-    QuerySnapshot querySnapshot = await eventsCollection.get();
-
-    // Firestoreから取得したデータをMapに変換
-    querySnapshot.docs.forEach((document) {
-      // startDateフィールドがnullでないことを確認してからキャストする
-      if (document['startDate'] != null) {
-        DateTime eventDate = (document['startDate'] as Timestamp).toDate();
-        String eventName = document['eventName'];
-
-        // イベントの日付をキーとして、イベント名をリストに追加
-        if (eventsMap.containsKey(eventDate)) {
-          eventsMap[eventDate]?.add(eventName);
-        } else {
-          eventsMap[eventDate] = [eventName];
-        }
-      }
-    });
-
-    return eventsMap;
-  } catch (e) {
-    print('Error fetching events from Firestore: $e');
-    return {};
-  }
-}
-
-DateTime _focused = DateTime.now();
-DateTime? _selected;
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
   @override
@@ -64,11 +28,52 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePage extends State<HomePage> {
-  // カレンダーに表示するイベントデータを保持する変数
   Map<DateTime, List<String>> _eventsData = {};
-
-  // カレンダーで選択された日付のイベントデータを保持する変数
   List<String> _selectedEvents = [];
+
+  // Function to fetch events data from Firestore
+  Future<void> _fetchEventsData() async {
+    try {
+      final QuerySnapshot snapshot =
+          await FirebaseFirestore.instance.collection('events').get();
+
+      Map<DateTime, List<String>> eventsData = {};
+
+      snapshot.docs.forEach((doc) {
+        DateTime eventDate = (doc['eventDate'] as Timestamp).toDate();
+        String eventName = doc['eventName'];
+
+        // Check if the eventDate already exists in the map
+        if (eventsData.containsKey(eventDate)) {
+          eventsData[eventDate]!.add(eventName);
+        } else {
+          eventsData[eventDate] = [eventName];
+          //print(eventsData[eventDate]);
+        }
+      });
+
+      setState(() {
+        _eventsData = eventsData;
+        _selectedEvents = _eventsData[_selected] ?? [];
+      });
+    } catch (e) {
+      print('Error fetching events data: $e');
+    }
+  }
+
+  Color _textColor(DateTime day) {
+    const _defaultTextColor = Colors.black87;
+
+    if (day.weekday == DateTime.sunday) {
+      return Colors.red;
+    }
+    if (day.weekday == DateTime.saturday) {
+      return Colors.blue[600]!;
+    }
+    return _defaultTextColor;
+  }
+
+  bool _isLoading = true;
 
   @override
   Widget build(BuildContext context) {
@@ -96,101 +101,129 @@ class _HomePage extends State<HomePage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // カレンダーウィジェット
-          FutureBuilder<Map<DateTime, List<String>>>(
-            future: getEventsFromFirestore(), // Firestoreからイベントデータを取得
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                // データ取得中の表示
-                return CircularProgressIndicator();
-              } else if (snapshot.hasError) {
-                // データ取得エラー時の表示
-                return Text('データの取得に失敗しました');
-              } else {
-                // データ取得成功時の表示
-                _eventsData = snapshot.data ?? {};
-
-                return TableCalendar(
-                  firstDay: DateTime.utc(2020, 4, 1),
-                  lastDay: DateTime.utc(2025, 12, 31),
-                  locale: 'ja_JP',
-                  eventLoader: (date) {
-                    return _eventsData[date] ?? [];
-                  },
-                  selectedDayPredicate: (day) {
-                    return isSameDay(_selected, day);
-                  },
-                  onDaySelected: (selected, focused) {
-                    if (!isSameDay(_selected, selected)) {
-                      setState(() {
-                        _selected = selected;
-                        _focused = focused;
-                        _selectedEvents = _eventsData[selected] ?? [];
-                      });
-                    }
-                  },
-                  focusedDay: _focused,
-                );
-              }
-            },
-          ),
-          // イベントリスト
-          Expanded(
-            child: ListView.builder(
-              itemCount: _selectedEvents.length,
-              itemBuilder: (context, index) {
-                final event = _selectedEvents[index];
-                return Card(
-                  child: ListTile(
-                    title: Text(event),
+      body: Container(
+        color: const Color.fromARGB(196, 243, 228, 210),
+        child: Column(
+          children: [
+            // カレンダーウィジェット
+            // Show loading indicator while fetching data
+            _isLoading
+                ? CircularProgressIndicator()
+                : TableCalendar(
+                    firstDay: DateTime.utc(2020, 4, 1),
+                    lastDay: DateTime.utc(2025, 12, 31),
+                    locale: 'ja_JP',
+                    eventLoader: (date) {
+                      print(_eventsData);
+                      return _eventsData[date] ?? [];
+                    },
+                    headerStyle: const HeaderStyle(
+                      formatButtonVisible: false, // "2weeks" テキストを非表示にする
+                    ),
+                    selectedDayPredicate: (day) {
+                      return isSameDay(_selected, day);
+                    },
+                    onDaySelected: (selected, focused) {
+                      if (!isSameDay(_selected, selected)) {
+                        setState(() {
+                          _selected = selected;
+                          _focused = focused;
+                          _selectedEvents = _eventsData[selected] ?? [];
+                        });
+                      }
+                    },
+                    focusedDay: _focused,
+                    calendarBuilders: CalendarBuilders(
+                      // 日付セルのテキストスタイルをカスタマイズ
+                      defaultBuilder: (context, date, _) {
+                        return Container(
+                          margin: const EdgeInsets.all(4),
+                          alignment: Alignment.center,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.transparent, // 背景を透明にする
+                          ),
+                          child: Text(
+                            '${date.day}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: _textColor(date), // _textColor 関数を適用
+                            ),
+                          ),
+                        );
+                      },
+                      // 選択中の日付セルのテキストスタイルをカスタマイズ
+                      selectedBuilder: (context, date, _) {
+                        return Container(
+                          margin: const EdgeInsets.all(4),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Theme.of(context).primaryColor, // 選択時の背景色
+                          ),
+                          child: Text(
+                            '${date.day}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Colors.white, // 選択時のテキスト色
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                );
-              },
-            ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Color.fromARGB(246, 241, 205, 172),
-                width: 2,
+
+            // イベントリスト
+            Expanded(
+              child: ListView.builder(
+                itemCount: _selectedEvents.length,
+                itemBuilder: (context, index) {
+                  final event = _selectedEvents[index];
+                  return Card(
+                    child: ListTile(
+                      title: Text(event),
+                    ),
+                  );
+                },
               ),
-              borderRadius: BorderRadius.circular(8),
             ),
-            width: 200,
-            height: 70,
-            child: OutlinedButton(
-              child: const Text('コートの予約'),
-              style: OutlinedButton.styleFrom(
-                primary: Colors.black,
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: const Color.fromARGB(246, 241, 205, 172),
+                  width: 2,
+                ),
+                borderRadius: BorderRadius.circular(8),
               ),
-              onPressed: () {
-                // 予約ページに遷移する処理
-                // 'https://reserve.city.aizuwakamatsu.fukushima.jp/' に飛ぶ
-                _launchUrl();
-              },
+              width: 200,
+              height: 70,
+              child: OutlinedButton(
+                child: Text('コートの予約'),
+                style: OutlinedButton.styleFrom(
+                  primary: Colors.black,
+                ),
+                onPressed: () {
+                  // 予約ページに遷移する処理
+                  _launchUrl();
+                },
+              ),
             ),
-          ),
-          Container(
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Color.fromARGB(246, 241, 205, 172),
-                width: 2,
-              ),
-              borderRadius: BorderRadius.circular(8),
+          ],
+        ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          children: [
+            DrawerHeader(
+              decoration:
+                  BoxDecoration(color: const Color.fromARGB(173, 49, 44, 44)),
+              child: Text('Application inforrmation'),
             ),
-            width: 200,
-            height: 70,
-            child: OutlinedButton(
-              child: const Text('ログアウト'),
-              style: OutlinedButton.styleFrom(
-                primary: Colors.black,
-              ),
-              onPressed: () async {
+            ListTile(
+              title: Text('Log out'),
+              onTap: () async {
                 // ログアウト処理
                 // 内部で保持しているログイン情報等が初期化される
-                // （現時点ではログアウト時はこの処理を呼び出せばOKと、思うぐらいで大丈夫です）
                 await FirebaseAuth.instance.signOut();
                 // ログイン画面に遷移＋チャット画面を破棄
                 await Navigator.of(context).pushReplacement(
@@ -200,9 +233,20 @@ class _HomePage extends State<HomePage> {
                 );
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch events data when the widget is initialized
+    _fetchEventsData().then((_) {
+      setState(() {
+        _isLoading = false; // Set loading flag to false when data is fetched
+      });
+    });
   }
 }
