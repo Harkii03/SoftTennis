@@ -100,7 +100,7 @@ class _VideoPageState extends State<VideoPage> {
         child: Material(
             animationDuration: duration,
             elevation: 8,
-            color: Color.fromARGB(193, 241, 206, 166),
+            color: const Color.fromARGB(196, 243, 228, 210),
             child: Column(
               children: <Widget>[
                 Container(
