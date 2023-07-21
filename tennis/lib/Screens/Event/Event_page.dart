@@ -26,6 +26,7 @@ class _EventPageState extends State<EventPage> {
         backgroundColor: const Color.fromARGB(173, 49, 44, 44),
       ),
       body: Container(
+        color: Color.fromARGB(196, 243, 228, 210),
         padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
@@ -114,7 +115,7 @@ class _EventPageState extends State<EventPage> {
         'eventName': _eventNameController.text, // Use directly from form fields
         'eventDescription':
             _eventDescriptionController.text, // Use directly from form fields
-        'startDate': _startDate,
+        'eventDate': _startDate,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
