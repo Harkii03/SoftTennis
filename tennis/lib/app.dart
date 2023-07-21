@@ -25,14 +25,26 @@ class _AppPage extends State<AppPage> {
     return Scaffold(
         body: _screens[_selectedIndex],
         bottomNavigationBar: BottomNavigationBar(
+          unselectedItemColor: Color.fromARGB(246, 241, 205, 172),
+          selectedItemColor: Colors.white,
           currentIndex: _selectedIndex,
           onTap: _onItemTapped,
           items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
-            BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: '記録'),
-            BottomNavigationBarItem(icon: Icon(Icons.video_call), label: '動画'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home, color: Color.fromARGB(246, 241, 205, 172)),
+              label: 'ホーム',
+            ),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.menu_book,
+                    color: Color.fromARGB(246, 241, 205, 172)),
+                label: '記録'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.video_call,
+                    color: Color.fromARGB(246, 241, 205, 172)),
+                label: '動画'),
           ],
           type: BottomNavigationBarType.fixed,
+          backgroundColor: Color.fromARGB(173, 49, 44, 44),
         ));
   }
 }
