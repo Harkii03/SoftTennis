@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tennis/Practice_Record_page.dart';
-import 'package:tennis/tournament_Record_page.dart';
+import 'package:tennis/Screens/Record/App_View_practice_record_page.dart';
+import 'package:tennis/Screens/Record/Practice_record_page.dart';
+import 'package:tennis/Screens/Record/Tournament_record_page.dart';
 
 class RecordPage extends StatefulWidget {
   const RecordPage({Key? key}) : super(key: key);
@@ -11,70 +12,120 @@ class RecordPage extends StatefulWidget {
 class _RecordPageState extends State<RecordPage> {
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
-        appBar: AppBar(
-          // タイトル
-          title: const Text('記録ページ',
-              style: TextStyle(color: Color.fromARGB(246, 241, 205, 172))),
-          // 背景色
-          backgroundColor: Color.fromARGB(173, 49, 44, 44),
+      appBar: AppBar(
+        // タイトルz
+        title: const Text(
+          '記録ページ',
+          style: TextStyle(color: Color.fromARGB(246, 241, 205, 172)),
         ),
-        body: Column(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                // 枠線
-                border: Border.all(
-                    color: Color.fromARGB(246, 241, 205, 172), width: 2),
-                // 角丸
-                borderRadius: BorderRadius.circular(8),
+        // 背景色
+        backgroundColor: const Color.fromARGB(173, 49, 44, 44),
+      ),
+      body: Container(
+        color: const Color.fromARGB(196, 243, 228, 210),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      // 角丸
+                      borderRadius: BorderRadius.circular(60),
+                      // 枠線
+                      border: Border.all(
+                        color: const Color.fromARGB(173, 49, 44, 44),
+                        width: 2,
+                      ),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (BuildContext context) =>
+                                PracticeRecordPage(),
+                          ),
+                        );
+                      },
+                      child: Center(
+                        child: Text(
+                          '練習記録',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 30),
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      // 角丸
+                      borderRadius: BorderRadius.circular(60),
+                      // 枠線
+                      border: Border.all(
+                        color: const Color.fromARGB(173, 49, 44, 44),
+                        width: 2,
+                      ),
+                    ),
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute<void>(
+                            builder: (BuildContext context) =>
+                                TournamentRecordPage(),
+                          ),
+                        );
+                      },
+                      child: Center(
+                        child: Text(
+                          '大会記録',
+                          style: TextStyle(color: Colors.black),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              width: 200,
-              height: 70,
-              child: OutlinedButton(
-                child: const Text('練習記録'),
-                style: OutlinedButton.styleFrom(
-                  primary: Colors.black,
+              SizedBox(height: 60),
+              Container(
+                width: 180,
+                height: 60,
+                decoration: BoxDecoration(
+                  // 枠線
+                  border: Border.all(
+                    color: const Color.fromARGB(173, 49, 44, 44),
+                    width: 2,
+                  ),
                 ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                        builder: (BuildContext context) =>
-                            PracticeRecordPage()),
-                  );
-                },
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                // 枠線
-                border: Border.all(
-                    color: Color.fromARGB(246, 241, 205, 172), width: 2),
-                // 角丸
-                borderRadius: BorderRadius.circular(8),
-              ),
-              width: 200,
-              height: 70,
-              child: OutlinedButton(
-                child: const Text('大会記録'),
-                style: OutlinedButton.styleFrom(
-                  primary: Colors.black,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (BuildContext context) => AppRecordViewPage(),
+                      ),
+                    );
+                  },
+                  child: Center(
+                    child: Text(
+                      '記録一覧',
+                      style: TextStyle(color: Colors.black),
+                    ),
+                  ),
                 ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                        builder: (BuildContext context) =>
-                            TournamentRecordPage()),
-                  );
-                },
               ),
-            ),
-          ],
-        ));
-
-    throw UnimplementedError();
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
