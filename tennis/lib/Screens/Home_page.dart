@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tennis/Login/Login_page.dart';
+import 'package:tennis/Screens/Event/Event_edit_page.dart';
 import 'package:tennis/Screens/Event/Event_page.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,9 +11,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 // 会津若松体育施設予約のURL
 final Uri _url = Uri.parse('https://reserve.city.aizuwakamatsu.fukushima.jp/');
-
-DateTime _focused = DateTime.now();
-DateTime? _selected;
 
 // 予約ページに遷移する処理
 Future<void> _launchUrl() async {
@@ -28,37 +26,83 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePage extends State<HomePage> {
-  Map<DateTime, List<String>> _eventsData = {};
+  DateTime _focused = DateTime.now();
+  DateTime? _selected;
+  DateTime Date = DateTime.now();
+
+  final sampleMap = {};
+  // カレンダーのイベントデータ
   List<String> _selectedEvents = [];
+  // カレンダーのイベントデータを格納するMap
+  Map<DateTime, List<String>> _eventsData = {};
 
-  // Function to fetch events data from Firestore
-  Future<void> _fetchEventsData() async {
-    try {
-      final QuerySnapshot snapshot =
-          await FirebaseFirestore.instance.collection('events').get();
+  Future<void> _fetchEventsFromFirestore(DateTime date) async {
+    String formattedDate = DateFormat('yyyy-MM-dd').format(date);
+    CollectionReference eventsCollection =
+        FirebaseFirestore.instance.collection('events');
 
-      Map<DateTime, List<String>> eventsData = {};
+    QuerySnapshot snapshot = await eventsCollection
+        .where('eventDate', isEqualTo: formattedDate)
+        .get();
 
-      snapshot.docs.forEach((doc) {
-        DateTime eventDate = (doc['eventDate'] as Timestamp).toDate();
-        String eventName = doc['eventName'];
+    List<String> selectedEvents = [];
 
-        // Check if the eventDate already exists in the map
-        if (eventsData.containsKey(eventDate)) {
-          eventsData[eventDate]!.add(eventName);
-        } else {
-          eventsData[eventDate] = [eventName];
-          //print(eventsData[eventDate]);
-        }
-      });
+    snapshot.docs.forEach((doc) {
+      Map<String, dynamic> eventData = doc.data()
+          as Map<String, dynamic>; // Explicitly cast to the expected type
+      String eventName = eventData['eventName'];
+      selectedEvents.add(eventName);
+    });
 
-      setState(() {
-        _eventsData = eventsData;
-        _selectedEvents = _eventsData[_selected] ?? [];
-      });
-    } catch (e) {
-      print('Error fetching events data: $e');
+    _eventsData[date] = selectedEvents;
+
+    setState(() {
+      _selectedEvents =
+          selectedEvents; // Update the state with the fetched events for the selected date
+    });
+  }
+
+  // Function to fetch events for the currently focused month
+  Future<void> _fetchEventsForCurrentMonth(DateTime focused) async {
+    DateTime firstDayOfMonth = DateTime(focused.year, focused.month, 1);
+    DateTime lastDayOfMonth = DateTime(focused.year, focused.month + 1, 0);
+
+    for (DateTime date = firstDayOfMonth;
+        date.isBefore(lastDayOfMonth);
+        date = date.add(Duration(days: 1))) {
+      await _fetchEventsFromFirestore(date);
     }
+
+    // Update the events data for the calendar
+    setState(() {});
+  }
+
+  // Function to navigate to the EditEventPage with the selected event data
+  Future<void> _editEvent(String event) async {
+    final editedEvent = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => EditEventPage(event: event)),
+    );
+
+    if (editedEvent != null) {
+      // Update the event data in the _eventsData map
+      _selectedEvents.remove(event);
+      _selectedEvents.add(editedEvent);
+      _eventsData[_selected!] = _selectedEvents;
+
+      // Update the events data for the calendar
+      setState(() {});
+    }
+  }
+
+  // Function to delete the event
+  void _deleteEvent(String event) {
+    // Remove the event from the _eventsData map
+    _selectedEvents.remove(event);
+    _eventsData[_selected!] = _selectedEvents;
+
+    // Update the events data for the calendar
+    setState(() {});
   }
 
   Color _textColor(DateTime day) {
@@ -66,21 +110,25 @@ class _HomePage extends State<HomePage> {
 
     if (day.weekday == DateTime.sunday) {
       return Colors.red;
-    }
-    if (day.weekday == DateTime.saturday) {
+    } else if (day.weekday == DateTime.saturday) {
       return Colors.blue[600]!;
     }
     return _defaultTextColor;
   }
 
-  bool _isLoading = true;
+  @override
+  void initState() {
+    super.initState();
+    _fetchEventsFromFirestore(_focused);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("ソフトテニス管理アプリ",
-            style: TextStyle(color: Color.fromARGB(246, 241, 205, 172))),
+            style: TextStyle(
+                color: Color.fromARGB(246, 241, 205, 172), fontSize: 19.0)),
         backgroundColor: const Color.fromARGB(173, 49, 44, 44),
         actions: [
           TextButton(
@@ -105,73 +153,79 @@ class _HomePage extends State<HomePage> {
         color: const Color.fromARGB(196, 243, 228, 210),
         child: Column(
           children: [
-            // カレンダーウィジェット
-            // Show loading indicator while fetching data
-            _isLoading
-                ? CircularProgressIndicator()
-                : TableCalendar(
-                    firstDay: DateTime.utc(2020, 4, 1),
-                    lastDay: DateTime.utc(2025, 12, 31),
-                    locale: 'ja_JP',
-                    eventLoader: (date) {
-                      print(_eventsData);
-                      return _eventsData[date] ?? [];
-                    },
-                    headerStyle: const HeaderStyle(
-                      formatButtonVisible: false, // "2weeks" テキストを非表示にする
-                    ),
-                    selectedDayPredicate: (day) {
-                      return isSameDay(_selected, day);
-                    },
-                    onDaySelected: (selected, focused) {
-                      if (!isSameDay(_selected, selected)) {
-                        setState(() {
-                          _selected = selected;
-                          _focused = focused;
-                          _selectedEvents = _eventsData[selected] ?? [];
-                        });
-                      }
-                    },
-                    focusedDay: _focused,
-                    calendarBuilders: CalendarBuilders(
-                      // 日付セルのテキストスタイルをカスタマイズ
-                      defaultBuilder: (context, date, _) {
-                        return Container(
-                          margin: const EdgeInsets.all(4),
-                          alignment: Alignment.center,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.transparent, // 背景を透明にする
-                          ),
-                          child: Text(
-                            '${date.day}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: _textColor(date), // _textColor 関数を適用
-                            ),
-                          ),
-                        );
-                      },
-                      // 選択中の日付セルのテキストスタイルをカスタマイズ
-                      selectedBuilder: (context, date, _) {
-                        return Container(
-                          margin: const EdgeInsets.all(4),
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Theme.of(context).primaryColor, // 選択時の背景色
-                          ),
-                          child: Text(
-                            '${date.day}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white, // 選択時のテキスト色
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+            // TableCalendar
+            TableCalendar(
+                firstDay: DateTime.utc(2020, 4, 1),
+                lastDay: DateTime.utc(2025, 12, 31),
+                locale: 'ja_JP',
+                eventLoader: (day) {
+                  // Ensure events for the currently focused month are displayed
+                  if (_eventsData.containsKey(day)) {
+                    return _eventsData[day] ?? [];
+                  } else {
+                    // If events for the day are not available, fetch and store them
+                    _fetchEventsFromFirestore(day);
+                    return [];
+                  }
+                },
+                headerStyle: const HeaderStyle(
+                  formatButtonVisible: false, // "2weeks" テキストを非表示にする
+                ),
+                selectedDayPredicate: (day) {
+                  return isSameDay(_selected, day);
+                },
+                onDaySelected: (selected, focused) {
+                  if (!isSameDay(_selected, selected)) {
+                    setState(() {
+                      _selected = selected;
+                      _focused = focused;
+                    });
+                    _fetchEventsFromFirestore(selected);
+                  }
+                },
+                focusedDay: _focused,
+                calendarBuilders: CalendarBuilders(
+                  // 日付セルのテキストスタイルをカスタマイズ
+                  defaultBuilder: (context, date, _) {
+                    return Container(
+                      margin: const EdgeInsets.all(4),
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.transparent, // 背景を透明にする
+                      ),
+                      child: Text(
+                        '${date.day}',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: _textColor(date), // _textColor 関数を適用
+                        ),
+                      ),
+                    );
+                  },
+
+                  // 選択中の日付セルのテキストスタイルをカスタマイズ
+                  selectedBuilder: (context, date, _) {
+                    return Container(
+                      margin: const EdgeInsets.all(4),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Theme.of(context).primaryColor, // 選択時の背景色
+                      ),
+                      child: Text(
+                        '${date.day}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white, // 選択時のテキスト色
+                        ),
+                      ),
+                    );
+                  },
+                )),
+            Container(
+              child: Text("イベント一覧"),
+            ),
 
             // イベントリスト
             Expanded(
@@ -179,32 +233,16 @@ class _HomePage extends State<HomePage> {
                 itemCount: _selectedEvents.length,
                 itemBuilder: (context, index) {
                   final event = _selectedEvents[index];
+
                   return Card(
                     child: ListTile(
                       title: Text(event),
+                      onTap: () {
+                        // Open the EditEventPage when the list item is tapped
+                        _editEvent(event);
+                      },
                     ),
                   );
-                },
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: const Color.fromARGB(246, 241, 205, 172),
-                  width: 2,
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              width: 200,
-              height: 70,
-              child: OutlinedButton(
-                child: Text('コートの予約'),
-                style: OutlinedButton.styleFrom(
-                  primary: Colors.black,
-                ),
-                onPressed: () {
-                  // 予約ページに遷移する処理
-                  _launchUrl();
                 },
               ),
             ),
@@ -217,10 +255,17 @@ class _HomePage extends State<HomePage> {
             DrawerHeader(
               decoration:
                   BoxDecoration(color: const Color.fromARGB(173, 49, 44, 44)),
-              child: Text('Application inforrmation'),
+              child: Text('アプリ情報'),
             ),
             ListTile(
-              title: Text('Log out'),
+              title: Text('コート予約'),
+              onTap: () {
+                // 予約ページに遷移する処理
+                _launchUrl();
+              },
+            ),
+            ListTile(
+              title: Text('ログアウト'),
               onTap: () async {
                 // ログアウト処理
                 // 内部で保持しているログイン情報等が初期化される
@@ -237,16 +282,5 @@ class _HomePage extends State<HomePage> {
         ),
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    // Fetch events data when the widget is initialized
-    _fetchEventsData().then((_) {
-      setState(() {
-        _isLoading = false; // Set loading flag to false when data is fetched
-      });
-    });
   }
 }
