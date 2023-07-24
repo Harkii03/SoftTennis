@@ -12,6 +12,7 @@ class EditEventPage extends StatefulWidget {
 
 class _EditEventPageState extends State<EditEventPage> {
   TextEditingController _textEditingController = TextEditingController();
+  String _infotext = '';
 
   @override
   void initState() {
@@ -20,49 +21,91 @@ class _EditEventPageState extends State<EditEventPage> {
   }
 
   void _updateEventInFirestore(String updatedEventName) {
-    // Get the current event document reference from Firestore
-    DocumentReference eventRef =
-        FirebaseFirestore.instance.collection('events').doc(widget.event);
+    // イベントドキュメントのコレクションへの参照を取得
+    CollectionReference eventsCollection =
+        FirebaseFirestore.instance.collection('events');
 
-    // Check if the document exists before updating
-    eventRef.get().then((DocumentSnapshot documentSnapshot) {
-      if (documentSnapshot.exists) {
-        // Document exists, proceed with the update
-        eventRef.update({'eventName': updatedEventName}).then((_) {
-          print("Event name updated in Firestore");
-          // Optionally, you can show a message to the user indicating successful update.
-        }).catchError((error) {
-          print("Error updating event name: $error");
-          // Optionally, you can show a message to the user indicating the error.
-        });
-      } else {
-        // Document does not exist, handle the error accordingly
-        print("Error: Document does not exist.");
-        // You can choose to create a new document here if desired or show an error message.
-      }
-    }).catchError((error) {
-      print("Error checking document existence: $error");
-      // Optionally, you can show a message to the user indicating the error.
-    });
-  }
-
-  void _deleteEventFromFirestore() {
     // イベントドキュメントへの参照を取得
     DocumentReference eventRef =
         FirebaseFirestore.instance.collection('events').doc(widget.event);
 
-    // ドキュメントを削除
-    eventRef.delete().then((_) {
-      print("Event deleted from Firestore");
-      // Optionally, you can show a message to the user indicating successful deletion.
-      // 削除が成功したことをユーザーに示すメッセージを表示することもできます。
+    // eventNameが"test"と一致するドキュメントを検索
+    eventsCollection
+        .where('eventName', isEqualTo: eventRef.id)
+        .get()
+        .then((querySnapshot) {
+      // 一致するドキュメントがあるかどうかチェック
+      if (querySnapshot.docs.isNotEmpty) {
+        // 一致するドキュメントが見つかった場合は、最初のドキュメントを取得して更新
+        DocumentReference eventRef = querySnapshot.docs.first.reference;
+        eventRef.update({'eventName': updatedEventName}).then((_) {
+          print("Event name updated in Firestore");
+          // 必要に応じて、ユーザーに成功したことを示すメッセージを表示できます。
+          setState(() {
+            _infotext = '更新しました';
+          });
 
-      // 削除したことを伝えて、前の画面に戻る
-      Navigator.pop(context, 'deleted');
+          Future.delayed(Duration(seconds: 2), () {
+            Navigator.of(
+              context,
+            ).pop(updatedEventName);
+          });
+        }).catchError((error) {
+          print("Error updating event name: $error");
+          // 必要に応じて、ユーザーにエラーを示すメッセージを表示できます。
+        });
+      } else {
+        print("Error: Document not found.");
+        // 必要に応じて、ユーザーにエラーを示すメッセージを表示できます。
+      }
     }).catchError((error) {
-      print("Error deleting event: $error");
-      // Optionally, you can show a message to the user indicating the error.
-      // エラーが発生したことをユーザーに示すメッセージを表示することもできます。
+      print("Error retrieving event document: $error");
+      // 必要に応じて、ユーザーにエラーを示すメッセージを表示できます。
+    });
+  }
+
+  void _deleteEventFromFirestore() {
+    // イベントドキュメントのコレクションへの参照を取得
+    CollectionReference eventsCollection =
+        FirebaseFirestore.instance.collection('events');
+
+    // イベントドキュメントへの参照を取得
+    DocumentReference eventRef =
+        FirebaseFirestore.instance.collection('events').doc(widget.event);
+
+    // eventNameフィールドが"test"と一致するドキュメントを検索
+    eventsCollection
+        .where('eventName', isEqualTo: eventRef.id)
+        .get()
+        .then((querySnapshot) {
+      // 一致するドキュメントがあるかどうかチェック
+      if (querySnapshot.docs.isNotEmpty) {
+        // 一致するドキュメントが見つかった場合は、最初のドキュメントを取得して削除
+        DocumentReference eventRef = querySnapshot.docs.first.reference;
+        eventRef.delete().then((_) {
+          print("Event deleted from Firestore");
+
+          setState(() {
+            _infotext = '削除しました';
+          });
+
+          // 削除したことを伝えて、前の画面に戻る
+          Future.delayed(Duration(seconds: 2), () {
+            Navigator.of(
+              context,
+            ).pop('deleted');
+          });
+        }).catchError((error) {
+          print("Error deleting event: $error");
+        });
+      } else {
+        // 一致するドキュメントが見つからなかった場合は、エラーメッセージを表示
+        print("Error: Document not found.");
+        // 必要に応じて、ユーザーにエラーを示すメッセージを表示できます。
+      }
+    }).catchError((error) {
+      print("Error retrieving event document: $error");
+      // 必要に応じて、ユーザーにエラーを示すメッセージを表示できます。
     });
   }
 
@@ -92,8 +135,6 @@ class _EditEventPageState extends State<EditEventPage> {
                 String updatedEventName = _textEditingController.text;
                 // Update the event name in Firestore
                 _updateEventInFirestore(updatedEventName);
-                // Save changes and return to the previous screen
-                Navigator.pop(context, updatedEventName);
               },
               child: Text('  保存  '),
             ),
@@ -105,6 +146,8 @@ class _EditEventPageState extends State<EditEventPage> {
               },
               child: Text('  削除  '),
             ),
+            SizedBox(height: 16),
+            Text(_infotext),
           ],
         ),
       ),
